@@ -33,8 +33,9 @@ COPY --chown=www-data:www-data . /var/www/html
 # Install dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Generate application key
-RUN php artisan key:generate
+# Copy startup script
+COPY startup.sh /usr/local/bin/startup.sh
+RUN chmod +x /usr/local/bin/startup.sh
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
@@ -56,5 +57,5 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 # Expose port 80
 EXPOSE 80
 
-# Start Apache
-CMD ["apache2-foreground"]
+# Start with startup script
+CMD ["/usr/local/bin/startup.sh"]
