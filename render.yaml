@@ -1,13 +1,33 @@
 services:
   - type: web
     name: hotel-room-reservation
-    env: php
-    buildCommand: composer install --optimize-autoloader --no-dev && php artisan key:generate && php artisan migrate --force && php artisan config:cache && php artisan route:cache
-    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    runtime: docker
+    repo: https://github.com/shubhamsharma8686/hotel-room-reservation
+    region: oregon
+    plan: free
     envVars:
-      - key: APP_KEY
-        generateValue: true
+      - key: APP_NAME
+        value: "Hotel Room Reservation"
       - key: APP_ENV
         value: production
+      - key: APP_KEY
+        generateValue: true
       - key: APP_DEBUG
         value: false
+      - key: APP_URL
+        value: https://hotel-room-reservation.onrender.com
+      - key: LOG_CHANNEL
+        value: stack
+      - key: DB_CONNECTION
+        value: mysql
+      # Add your database credentials here
+      # - key: DB_HOST
+      #   value: your-db-host
+      # - key: DB_PORT
+      #   value: 3306
+      # - key: DB_DATABASE
+      #   value: your-database-name
+      # - key: DB_USERNAME
+      #   value: your-username
+      # - key: DB_PASSWORD
+      #   value: your-password
