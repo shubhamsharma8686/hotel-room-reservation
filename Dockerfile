@@ -33,12 +33,9 @@ COPY --chown=www-data:www-data . /var/www/html
 # Install dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Copy startup script
-COPY startup.sh /usr/local/bin/startup.sh
-RUN chmod +x /usr/local/bin/startup.sh
-
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
@@ -54,8 +51,27 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
+# Create startup script inline
+RUN echo '#!/bin/bash\n\
+# Generate app key if not set\n\
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:" ]; then\n\
+    php artisan key:generate --force\n\
+fi\n\
+# Run migrations if needed\n\
+php artisan migrate --force 2>/dev/null || true\n\
+# Cache configuration\n\
+php artisan config:cache\n\
+php artisan route:cache 2>/dev/null || true\n\
+php artisan view:cache 2>/dev/null || true\n\
+# Set proper permissions\n\
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true\n\
+# Start Apache\n\
+exec apache2-foreground' > /usr/local/bin/start.sh
+
+RUN chmod +x /usr/local/bin/start.sh
+
 # Expose port 80
 EXPOSE 80
 
 # Start with startup script
-CMD ["/usr/local/bin/startup.sh"]
+CMD ["/usr/local/bin/start.sh"]
